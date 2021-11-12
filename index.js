@@ -33,7 +33,8 @@ const downloadPage = async (link) => {
 
 const scrap = (html) => {
   const $ = cheerio.load(html);
-  const price = $('#price_inside_buybox')
+  const priceDiv = $('#corePrice_desktop')
+  const price = $('span.a-offscreen', priceDiv)
     .text()
     .replace(new RegExp('\\n', 'g'), '');
   const priceAlt = $('#price').text().replace(new RegExp('\\n', 'g'), '');
@@ -45,25 +46,52 @@ const scrap = (html) => {
 };
 
 const output = (data) => {
+  if (!data.length) {
+    console.log('>> No data... skipping');
+    return;
+  }
   console.log('>> Generating output');
   const date = new Date();
   const fileName = `${date.getFullYear()}_${
     date.getMonth() + 1
-  }_${date.getDate()}.txt`;
+  }_${date.getDate()}.csv`;
   console.log(`   - save as ${fileName}`);
   fs.writeFileSync(`./out/${fileName}`, data.join('\n'));
 };
 
-const main = async () => {
-  console.log('>> Process started');
+const checks = () => {
+  const input = fs.existsSync('./input.txt');
+  if (!input) fs.writeFileSync('./input.txt', '#fill');
+  const output = fs.existsSync('./out');
+  if (!output) fs.mkdirSync('./out');
 
+  if (!input) {
+    console.log('>> Input file created. Please, fill the input.txt accordingly the readme');
+  }
+
+  if (!output) {
+    console.log('>> No output folder found. Folder created');
+  }
+
+  return input && output;
+};
+
+const main = async () => {
+  console.log('>> Process started!');
+  if (!checks()) {
+    console.log('>> Please, try it again');
+    return
+  }
   const input = await readInput();
-  const data = [];
+  const data = ['name;price'];
   for (let idx in input) {
+
+    if (input[idx] === '#fill') break;
+
     console.log(`>> Item ${parseInt(idx) + 1}/${input.length} started`);
     const html = await downloadPage(input[idx]);
     const result = await scrap(html);
-    data.push(result.price);
+    data.push(`${result.name};${result.price}`);
     await delay(3000);
     console.log(`>> Item ${parseInt(idx) + 1}/${input.length} finished`);
   }
@@ -71,4 +99,8 @@ const main = async () => {
   console.log('>> Done!');
 };
 
-main();
+module.exports = main;
+
+if (require.main === module) {
+  main();
+}
