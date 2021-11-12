@@ -91,7 +91,7 @@ const main = async (out = false) => {
   const input = await readInput();
   const data = [];
   for (let idx in input) {
-    if (input[idx] === '#fill') break;
+    if (input[idx] === '#fill' || input[idx].length < 5) break;
 
     console.log(`>> Item ${parseInt(idx) + 1}/${input.length} started`);
     const html = await downloadPage(input[idx]);
