@@ -33,7 +33,7 @@ const downloadPage = async (link) => {
 
 const scrap = (html) => {
   const $ = cheerio.load(html);
-  const priceDiv = $('#corePrice_desktop')
+  const priceDiv = $('#corePrice_desktop');
   const price = $('span.a-offscreen', priceDiv)
     .text()
     .replace(new RegExp('\\n', 'g'), '');
@@ -56,7 +56,11 @@ const output = (data) => {
     date.getMonth() + 1
   }_${date.getDate()}.csv`;
   console.log(`   - save as ${fileName}`);
-  fs.writeFileSync(`./out/${fileName}`, data.join('\n'));
+
+  data = data.map((item) => `${item.name}; ${item.price}`);
+  outputData = ['name;price', ...data];
+
+  fs.writeFileSync(`./out/${fileName}`, outputData.join('\n'));
 };
 
 const checks = () => {
@@ -66,7 +70,9 @@ const checks = () => {
   if (!output) fs.mkdirSync('./out');
 
   if (!input) {
-    console.log('>> Input file created. Please, fill the input.txt accordingly the readme');
+    console.log(
+      '>> Input file created. Please, fill the input.txt accordingly the readme',
+    );
   }
 
   if (!output) {
@@ -76,31 +82,33 @@ const checks = () => {
   return input && output;
 };
 
-const main = async () => {
+const main = async (out = false) => {
   console.log('>> Process started!');
   if (!checks()) {
     console.log('>> Please, try it again');
-    return
+    return;
   }
   const input = await readInput();
-  const data = ['name;price'];
+  const data = [];
   for (let idx in input) {
-
     if (input[idx] === '#fill') break;
 
     console.log(`>> Item ${parseInt(idx) + 1}/${input.length} started`);
     const html = await downloadPage(input[idx]);
     const result = await scrap(html);
-    data.push(`${result.name};${result.price}`);
+    data.push({ ...result, link: input[idx] });
     await delay(3000);
     console.log(`>> Item ${parseInt(idx) + 1}/${input.length} finished`);
   }
-  output(data);
+  if (out) {
+    output(data);
+  }
   console.log('>> Done!');
+  return data;
 };
 
 module.exports = main;
 
 if (require.main === module) {
-  main();
+  main(true);
 }
