@@ -23,12 +23,18 @@ const readInput = () => {
 };
 
 const downloadPage = async (link) => {
-  const { data: html } = await axios.get(link, {
-    headers: {
-      'User-Agent': getUA(),
-    },
-  });
-  return html;
+  try {
+    const { data: html } = await axios.get(link, {
+      headers: {
+        'User-Agent': getUA(),
+      },
+    });
+    return html;
+  } catch (err) {
+    console.log(err);
+    console.log(`>> The download of ${link} failed`);
+    return null;
+  }
 };
 
 const scrap = (html) => {
@@ -95,10 +101,12 @@ const main = async (out = false) => {
 
     console.log(`>> Item ${parseInt(idx) + 1}/${input.length} started`);
     const html = await downloadPage(input[idx]);
-    const result = await scrap(html);
-    data.push({ ...result, link: input[idx] });
-    await delay(3000);
-    console.log(`>> Item ${parseInt(idx) + 1}/${input.length} finished`);
+    if (html) {
+      const result = await scrap(html);
+      data.push({ ...result, link: input[idx] });
+      await delay(3000);
+      console.log(`>> Item ${parseInt(idx) + 1}/${input.length} finished`);
+    }
   }
   if (out) {
     output(data);
