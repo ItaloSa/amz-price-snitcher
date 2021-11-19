@@ -7,6 +7,8 @@ const scraper = require('./index');
 
 const delay = (ms) => new Promise((res) => setTimeout(res, ms));
 
+let cronJob = null;
+
 const loadConfig = () => {
   if (!fs.existsSync('./config.json')) {
     return null;
@@ -75,7 +77,7 @@ const publishChanges = async (url, changes) => {
   }
 };
 
-const job = async () => {
+const job = async (cronJob) => {
   console.log('>> JOB STARTED')
   const config = loadConfig();
   if (!config) {
@@ -92,16 +94,23 @@ const job = async () => {
     publishChanges(config.webhook, compareResult.changes);
   }
   console.log('>> JOB FINISHED')
+  console.log(`>> Next run at ${cronJob.nextDate().toISOString()}`)
 };
 
-const cronJob = new CronJob(
-  '0/30 * * * *', // every 30 minute
-  () => job(),
-  null,
-  true,
-  'America/Sao_Paulo',
-);
+const main = () => {
+  console.log('>> CRON STARTED')
+  cronJob = new CronJob(
+    '0/30 * * * *', // every 30 minute
+    () => job(cronJob),
+    null,
+    true,
+    'America/Sao_Paulo',
+  );
+  cronJob.start();
+  console.log(`>> Next run at ${cronJob.nextDate().toISOString()}`)
+}
 
-cronJob.start();
+main()
+
 
 // job();
